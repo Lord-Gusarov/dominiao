@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="manifest.json">
+<title>Dominiao</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#1a1a2e;--surface:#16213e;--accent:#e94560;--accent2:#0f3460;
+    --text:#eee;--text-dim:#889;--gold:#f5c518;--green:#2ecc71;--radius:12px;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  :root.light{
+    --bg:#f0f0f5;--surface:#fff;--accent:#d63355;--accent2:#2a5fad;
+    --text:#222;--text-dim:#778;--gold:#d4a811;--green:#1fa855;
+  }
+  html{height:100%;-webkit-text-size-adjust:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;
+    min-height:100vh;min-height:100dvh;
+    padding:var(--safe-top) 12px 0;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    overflow-x:hidden;
+    transition:background .3s,color .3s;
+  }
+  /* Prevent iOS zoom on input focus — inputs must be >= 16px */
+  input,button,select,textarea{font-size:16px;touch-action:manipulation}
+  /* Remove iOS input styling */
+  input[type="number"]{-webkit-appearance:none;-moz-appearance:textfield;appearance:none}
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+  /* Header */
+  header{text-align:center;padding:16px 0 6px}
+  header h1{font-size:1.8rem;letter-spacing:2px;font-weight:800}
+  header h1 span{color:var(--accent)}
+  header p{font-size:.75rem;color:var(--text-dim);margin-top:2px;font-style:italic}
+
+  /* Top controls */
+  .top-controls{position:absolute;top:12px;right:12px;display:flex;gap:6px}
+  .top-controls button{
+    background:var(--surface);border:1px solid rgba(255,255,255,.1);border-radius:8px;
+    color:var(--text-dim);font-size:14px;padding:8px 14px;cursor:pointer;font-family:inherit;
+    min-height:44px;min-width:44px;transition:all .15s;
+  }
+  :root.light .top-controls button{border-color:rgba(0,0,0,.1)}
+  .top-controls button:hover{color:var(--text);border-color:rgba(255,255,255,.25)}
+  :root.light .top-controls button:hover{border-color:rgba(0,0,0,.25)}
+
+  /* Mode selector */
+  .mode-bar{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+  .mode-btn{
+    background:var(--surface);border:2px solid transparent;border-radius:8px;
+    color:var(--text-dim);font-size:14px;padding:10px 16px;cursor:pointer;font-family:inherit;
+    font-weight:600;transition:all .15s;min-height:44px;
+  }
+  .mode-btn.active{border-color:var(--accent);color:var(--text)}
+  .mode-btn:hover{color:var(--text)}
+
+  /* Scoreboard */
+  .scoreboard{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;width:100%;max-width:480px;margin-top:12px}
+  .team{background:var(--surface);border-radius:var(--radius);padding:16px 8px;text-align:center;position:relative;transition:box-shadow .3s}
+  .team.winner{box-shadow:0 0 20px var(--gold),0 0 40px rgba(245,197,24,.3)}
+  .team-name{font-size:.85rem;color:var(--text-dim);cursor:pointer;border:none;background:none;text-align:center;width:100%;font-family:inherit;padding:4px;border-radius:6px;transition:background .2s}
+  .team-name:hover,.team-name:focus{background:rgba(255,255,255,.08);color:var(--text);outline:none}
+  :root.light .team-name:hover,:root.light .team-name:focus{background:rgba(0,0,0,.05)}
+  .score{font-size:3.5rem;font-weight:800;margin:8px 0;line-height:1;transition:transform .15s}
+  .score.pop{transform:scale(1.15)}
+  .team:first-child .score{color:var(--accent)}
+  .team:last-child .score{color:var(--green)}
+  .vs{font-size:.9rem;color:var(--text-dim);font-weight:700}
+
+  /* Target info */
+  .target-row{text-align:center;margin-top:6px;font-size:.75rem;color:var(--text-dim)}
+
+  /* Add points section */
+  .add-section{width:100%;max-width:480px;margin-top:16px}
+  .add-section h3{font-size:.8rem;color:var(--text-dim);text-align:center;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+  .points-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .points-col{display:flex;flex-direction:column;gap:6px}
+  .points-col-label{font-size:.7rem;color:var(--text-dim);text-align:center;margin-bottom:2px}
+  .pts-btn{
+    background:var(--surface);border:2px solid transparent;border-radius:var(--radius);
+    color:var(--text);font-size:18px;font-weight:700;padding:16px 0;cursor:pointer;
+    font-family:inherit;transition:all .15s;min-height:52px;
+  }
+  .pts-btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .pts-btn:active{transform:scale(.96);background:rgba(255,255,255,.05)}
+  .points-col:first-child .pts-btn:hover{border-color:var(--accent)}
+  .points-col:last-child .pts-btn:hover{border-color:var(--green)}
+  .pts-btn.bonus{background:rgba(245,197,24,.1);border-color:rgba(245,197,24,.3)}
+  .pts-btn.bonus:hover{border-color:var(--gold)}
+
+  /* Custom points input */
+  .custom-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .custom-input-group{display:flex;gap:4px}
+  .custom-input-group input{
+    flex:1;background:var(--surface);border:2px solid transparent;border-radius:var(--radius);
+    color:var(--text);font-size:16px;padding:12px;text-align:center;font-family:inherit;
+    width:100%;min-width:0;min-height:48px;
+  }
+  .custom-input-group input:focus{outline:none;border-color:var(--accent)}
+  .custom-input-group input::placeholder{color:var(--text-dim)}
+  .custom-input-group button{
+    background:var(--accent2);border:none;border-radius:var(--radius);color:var(--text);
+    font-size:18px;padding:0 18px;cursor:pointer;font-weight:700;white-space:nowrap;min-width:48px;min-height:48px;
+  }
+  .custom-input-group button:hover{opacity:.85}
+
+  /* Rounds history */
+  .rounds{width:100%;max-width:480px;margin-top:16px;padding-bottom:calc(100px + var(--safe-bottom))}
+  .rounds h3{font-size:.8rem;color:var(--text-dim);text-align:center;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+  .round-item{
+    display:grid;grid-template-columns:auto 1fr auto 1fr auto auto;align-items:center;gap:8px;
+    background:var(--surface);border-radius:8px;padding:8px 12px;margin-bottom:4px;font-size:.85rem;
+  }
+  .round-del{
+    background:none;border:1px solid rgba(255,255,255,.08);border-radius:6px;
+    color:var(--text-dim);font-size:14px;padding:4px 8px;cursor:pointer;min-height:32px;min-width:32px;
+    display:flex;align-items:center;justify-content:center;transition:all .15s;
+  }
+  :root.light .round-del{border-color:rgba(0,0,0,.1)}
+  .round-del:hover,.round-del:active{color:var(--accent);border-color:var(--accent)}
+  .round-num{color:var(--text-dim);font-size:.7rem;min-width:20px}
+  .round-pts{text-align:center;font-weight:700}
+  .round-pts.t1{color:var(--accent)}
+  .round-pts.t2{color:var(--green)}
+  .round-dash{color:var(--text-dim);text-align:center}
+  .round-label{color:var(--gold);font-size:.65rem;margin-left:2px}
+  .no-rounds{text-align:center;color:var(--text-dim);font-size:.8rem;padding:12px}
+
+  /* Actions bar */
+  .actions{
+    position:fixed;bottom:0;left:0;right:0;
+    display:flex;gap:8px;padding:12px;
+    padding-bottom:calc(12px + var(--safe-bottom));
+    background:linear-gradient(transparent,var(--bg) 20%);
+    justify-content:center;padding-top:30px;
+  }
+  .actions button{
+    background:var(--surface);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);
+    color:var(--text-dim);font-size:16px;padding:12px 22px;cursor:pointer;font-family:inherit;
+    transition:all .15s;min-height:48px;
+  }
+  :root.light .actions button{border-color:rgba(0,0,0,.1)}
+  .actions button:hover{color:var(--text);border-color:rgba(255,255,255,.25)}
+  .actions button.danger:hover{color:var(--accent);border-color:var(--accent)}
+
+  /* Winner overlay */
+  .overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
+    z-index:100;justify-content:center;align-items:center;flex-direction:column;
+  }
+  .overlay.show{display:flex}
+  .overlay h2{font-size:2rem;margin-bottom:4px}
+  .overlay .winner-name{font-size:3rem;font-weight:800;color:var(--gold);margin-bottom:20px}
+  .win-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .overlay button{
+    background:var(--accent);border:none;border-radius:var(--radius);color:#fff;
+    font-size:16px;padding:14px 28px;cursor:pointer;font-family:inherit;font-weight:700;min-height:48px;
+  }
+  .overlay button:hover{opacity:.9}
+  #winNewGameBtn{background:var(--surface);border:1px solid rgba(255,255,255,.2)}
+  #winShareBtn{background:var(--accent2)}
+
+  /* New game dialog */
+  .dialog-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:90;justify-content:center;align-items:center}
+  .dialog-overlay.show{display:flex}
+  .dialog{background:var(--surface);border-radius:var(--radius);padding:24px;width:300px;text-align:center}
+  .dialog h3{margin-bottom:16px;font-size:1rem}
+  .dialog-mode-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .dialog-mode-btn{
+    background:var(--bg);border:2px solid rgba(255,255,255,.1);border-radius:var(--radius);
+    color:var(--text);font-size:16px;padding:16px;cursor:pointer;font-family:inherit;
+    font-weight:600;transition:all .15s;text-align:left;min-height:52px;
+  }
+  .dialog-mode-btn:hover{border-color:var(--accent)}
+  .dialog-mode-btn small{display:block;color:var(--text-dim);font-size:.7rem;font-weight:400;margin-top:2px}
+  /* Toast notification */
+  .toast{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);
+    background:var(--accent);color:#fff;padding:14px 24px;border-radius:var(--radius);
+    font-size:14px;font-weight:600;z-index:200;opacity:0;transition:all .3s ease;
+    pointer-events:none;text-align:center;max-width:90vw;
+    box-shadow:0 4px 20px rgba(233,69,96,.4);
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .toast.info{background:var(--accent2);box-shadow:0 4px 20px rgba(15,52,96,.4)}
+
+  .dialog .btn-cancel{
+    background:rgba(255,255,255,.1);color:var(--text-dim);border:none;border-radius:8px;
+    padding:12px 24px;cursor:pointer;font-family:inherit;font-weight:600;font-size:16px;margin-top:4px;min-height:48px;
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="bonusWarning"></div>
+
+<div class="top-controls">
+  <button id="themeBtn" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+  <button id="langBtn" onclick="toggleLang()">EN</button>
+</div>
+
+<header>
+  <h1>DOMINI<span>AO</span></h1>
+  <p id="tagline">Lleva la cuenta. Domina la mesa.</p>
+</header>
+
+<div class="mode-bar" id="modeBar"></div>
+
+<div class="scoreboard">
+  <div class="team" id="team1">
+    <input class="team-name" id="name1" value="Nosotros" maxlength="12" aria-label="Team 1 name">
+    <div class="score" id="score1">0</div>
+  </div>
+  <div class="vs">VS</div>
+  <div class="team" id="team2">
+    <input class="team-name" id="name2" value="Ellos" maxlength="12" aria-label="Team 2 name">
+    <div class="score" id="score2">0</div>
+  </div>
+</div>
+
+<div class="target-row" id="targetRow"></div>
+
+<div class="add-section">
+  <h3 id="addTitle">Agregar puntos</h3>
+  <div class="points-grid" id="pointsGrid"></div>
+  <div class="custom-row">
+    <div class="custom-input-group">
+      <input type="number" id="custom1" placeholder="Otro" min="0" inputmode="numeric">
+      <button onclick="addCustom(1)">+</button>
+    </div>
+    <div class="custom-input-group">
+      <input type="number" id="custom2" placeholder="Otro" min="0" inputmode="numeric">
+      <button onclick="addCustom(2)">+</button>
+    </div>
+  </div>
+</div>
+
+<div class="rounds">
+  <h3 id="roundsTitle">Rondas</h3>
+  <div id="roundsContent"></div>
+</div>
+
+<div class="actions">
+  <button id="undoBtn" onclick="undoLastRound()" style="display:none">&#8630; Undo</button>
+  <button id="shareBtn" onclick="shareScore()">&#8599; Share</button>
+  <button id="newGameBtn" class="danger" onclick="confirmQuickNewGame()">Nuevo juego</button>
+</div>
+
+<div class="overlay" id="winOverlay">
+  <h2>&#127942;</h2>
+  <div class="winner-name" id="winnerName"></div>
+  <div class="win-actions">
+    <button id="winContinueBtn" onclick="closeWin()">Seguir jugando</button>
+    <button id="winShareBtn" onclick="shareScore();closeWin()">&#8599; Share</button>
+    <button id="winNewGameBtn" onclick="closeWin();quickNewGame()">Nuevo juego</button>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="newGameDialog">
+  <div class="dialog">
+    <h3 id="dialogTitle">Nuevo juego</h3>
+    <div class="dialog-mode-list" id="dialogModes"></div>
+    <button class="btn-cancel" onclick="closeNewGameDialog()" id="dialogCancel">Cancelar</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'dominiao_game';
+const LANG_KEY = 'dominiao_lang';
+const THEME_KEY = 'dominiao_theme';
+
+// --- Haptic feedback ---
+function haptic(pattern) {
+  try { navigator.vibrate && navigator.vibrate(pattern); } catch(e) {}
+}
+
+// --- i18n ---
+const i18n = {
+  es: {
+    tagline: 'Lleva la cuenta. Domina la mesa.',
+    addPoints: 'Agregar puntos',
+    rounds: 'Rondas',
+    noRounds: 'A\u00fan no se han jugado rondas',
+    undo: '\u21b6 Deshacer',
+    newGame: 'Nuevo juego',
+    continuePlay: 'Seguir jugando',
+    share: '\u2197 Compartir',
+    target: 'Objetivo',
+    cancel: 'Cancelar',
+    newGameConfirm: 'Nuevo juego',
+    other: 'Otro',
+    bonus: 'Bono',
+    team1Default: 'Nosotros',
+    team2Default: 'Ellos',
+    resetWarning: '\u00bfComenzar un nuevo juego? Se perder\u00e1 la partida actual.',
+    bonusExceedsTarget: 'El bono superar\u00eda la puntuaci\u00f3n objetivo',
+    deleteRoundConfirm: '\u00bfEliminar esta ronda?',
+    undone: 'Ronda deshecha',
+    scoreCopied: 'Marcador copiado',
+    modes: {
+      200: { name: 'Cl\u00e1sica a 200', desc: 'Partida est\u00e1ndar de domin\u00f3' },
+      500: { name: 'A 500 con bonos', desc: 'Partida larga con bono de +25' },
+      100: { name: 'R\u00e1pida a 100', desc: 'Partida corta' },
+    }
+  },
+  en: {
+    tagline: 'Keep score. Rule the table.',
+    addPoints: 'Add points',
+    rounds: 'Rounds',
+    noRounds: 'No rounds played yet',
+    undo: '\u21b6 Undo',
+    newGame: 'New game',
+    continuePlay: 'Keep playing',
+    share: '\u2197 Share',
+    target: 'Target',
+    cancel: 'Cancel',
+    newGameConfirm: 'New game',
+    other: 'Other',
+    bonus: 'Bonus',
+    team1Default: 'Us',
+    team2Default: 'Them',
+    resetWarning: 'Start a new game? Current game will be lost.',
+    bonusExceedsTarget: 'Bonus would exceed the target score',
+    deleteRoundConfirm: 'Delete this round?',
+    undone: 'Round undone',
+    scoreCopied: 'Score copied',
+    modes: {
+      200: { name: 'Classic to 200', desc: 'Standard domino game' },
+      500: { name: 'To 500 with bonuses', desc: 'Long game with +25 bonus' },
+      100: { name: 'Quick to 100', desc: 'Short game' },
+    }
+  }
+};
+
+let lang = localStorage.getItem(LANG_KEY) || 'es';
+function t(key) { return i18n[lang][key]; }
+
+function toggleLang() {
+  const oldLang = lang;
+  lang = lang === 'es' ? 'en' : 'es';
+  // Update team names if they match the old language defaults
+  const oldT1 = i18n[oldLang].team1Default;
+  const oldT2 = i18n[oldLang].team2Default;
+  if (game.team1 === oldT1) game.team1 = t('team1Default');
+  if (game.team2 === oldT2) game.team2 = t('team2Default');
+  localStorage.setItem(LANG_KEY, lang);
+  save();
+  renderAll();
+}
+
+// --- Theme ---
+let theme = localStorage.getItem(THEME_KEY) || 'dark';
+
+function applyTheme() {
+  document.documentElement.classList.toggle('light', theme === 'light');
+  document.getElementById('themeBtn').textContent = theme === 'light' ? '\u263E' : '\u2600';
+}
+
+function toggleTheme() {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, theme);
+  applyTheme();
+}
+
+// --- Game modes ---
+const MODES = [
+  { id: '200', target: 200, hasBonus: false },
+  { id: '500', target: 500, hasBonus: true },
+  { id: '100', target: 100, hasBonus: false },
+];
+
+// --- Game state ---
+let game = {
+  team1: null,
+  team2: null,
+  rounds: [],    // each: [t1pts, t2pts, isBonus?]
+  mode: '200',
+  target: 200,
+  winShown: false
+};
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(game));
+}
+
+function load() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const saved = JSON.parse(raw);
+      game = { ...game, ...saved };
+    } catch(e) {}
+  }
+  if (!game.team1) game.team1 = t('team1Default');
+  if (!game.team2) game.team2 = t('team2Default');
+  if (!game.mode) { game.mode = '200'; game.target = 200; }
+}
+
+function totals() {
+  let t1 = 0, t2 = 0;
+  for (const r of game.rounds) { t1 += r[0]; t2 += r[1]; }
+  return [t1, t2];
+}
+
+function currentMode() {
+  return MODES.find(m => m.id === game.mode) || MODES[0];
+}
+
+// --- Score animation (count up) ---
+function animateScore(el, from, to) {
+  if (from === to) return;
+  const diff = to - from;
+  const steps = Math.min(Math.abs(diff), 15);
+  const duration = 400;
+  const stepTime = duration / steps;
+  let step = 0;
+  function tick() {
+    step++;
+    const progress = step / steps;
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    el.textContent = Math.round(from + diff * eased);
+    if (step < steps) setTimeout(tick, stepTime);
+  }
+  tick();
+}
+
+// --- Rendering ---
+function renderAll() {
+  document.getElementById('langBtn').textContent = lang === 'es' ? 'EN' : 'ES';
+  document.getElementById('tagline').textContent = t('tagline');
+  document.getElementById('addTitle').textContent = t('addPoints');
+  document.getElementById('roundsTitle').textContent = t('rounds');
+  document.getElementById('newGameBtn').textContent = t('newGame');
+  document.getElementById('undoBtn').textContent = t('undo');
+  document.getElementById('shareBtn').textContent = t('share');
+  document.getElementById('winContinueBtn').textContent = t('continuePlay');
+  document.getElementById('winShareBtn').textContent = t('share');
+  document.getElementById('winNewGameBtn').textContent = t('newGame');
+  document.getElementById('dialogTitle').textContent = t('newGameConfirm');
+  document.getElementById('dialogCancel').textContent = t('cancel');
+  document.getElementById('custom1').placeholder = t('other');
+  document.getElementById('custom2').placeholder = t('other');
+
+  renderModeBar();
+  renderPointsGrid();
+  renderScores();
+  renderDialogModes();
+  updateUndoButton();
+}
+
+function renderModeBar() {
+  const $bar = document.getElementById('modeBar');
+  $bar.innerHTML = MODES.map(m =>
+    `<button class="mode-btn${game.mode === m.id ? ' active' : ''}" onclick="switchMode('${m.id}')">${t('modes')[m.id].name}</button>`
+  ).join('');
+}
+
+function renderPointsGrid() {
+  const mode = currentMode();
+  const $grid = document.getElementById('pointsGrid');
+
+  let col1 = `<div class="points-col"><div class="points-col-label" id="colLabel1">${game.team1}</div>`;
+  let col2 = `<div class="points-col"><div class="points-col-label" id="colLabel2">${game.team2}</div>`;
+
+  col1 += `<button class="pts-btn bonus" onclick="addRound(25,0,true)">+25</button>`;
+  col2 += `<button class="pts-btn bonus" onclick="addRound(0,25,true)">+25</button>`;
+
+  if (mode.hasBonus) {
+    const bonusLabel = t('bonus');
+    col1 += `<button class="pts-btn bonus" onclick="addRound(25,0,true)">+25 ${bonusLabel}</button>`;
+    col2 += `<button class="pts-btn bonus" onclick="addRound(0,25,true)">+25 ${bonusLabel}</button>`;
+  }
+
+  col1 += '</div>';
+  col2 += '</div>';
+  $grid.innerHTML = col1 + col2;
+}
+
+function renderScores(animate) {
+  const [s1, s2] = totals();
+  const $s1 = document.getElementById('score1');
+  const $s2 = document.getElementById('score2');
+
+  if (animate) {
+    const prev1 = parseInt($s1.textContent) || 0;
+    const prev2 = parseInt($s2.textContent) || 0;
+    animateScore($s1, prev1, s1);
+    animateScore($s2, prev2, s2);
+  } else {
+    $s1.textContent = s1;
+    $s2.textContent = s2;
+  }
+
+  document.getElementById('name1').value = game.team1;
+  document.getElementById('name2').value = game.team2;
+
+  // Target row
+  const $tr = document.getElementById('targetRow');
+  $tr.textContent = `${t('target')}: ${game.target}`;
+
+  // Winner highlight
+  const $t1 = document.getElementById('team1');
+  const $t2 = document.getElementById('team2');
+  $t1.classList.toggle('winner', s1 >= game.target);
+  $t2.classList.toggle('winner', s2 >= game.target);
+
+  // Rounds list — bonus entries share the previous round's number with a 'b' suffix
+  const $rc = document.getElementById('roundsContent');
+  if (game.rounds.length === 0) {
+    $rc.innerHTML = `<div class="no-rounds">${t('noRounds')}</div>`;
+  } else {
+    // Pre-compute display labels: custom scores define hands, bonuses belong to the next hand
+    const labels = [];
+    let handNum = 1; // current hand in play, starts at 1
+    for (let i = 0; i < game.rounds.length; i++) {
+      if (game.rounds[i][2]) {
+        labels.push(`${handNum}b`);
+      } else {
+        labels.push(`${handNum}`);
+        handNum++; // hand closed, next entries belong to next hand
+      }
+    }
+    let html = '';
+    for (let i = game.rounds.length - 1; i >= 0; i--) {
+      const r = game.rounds[i];
+      const bonusTag = r[2] ? `<span class="round-label">${t('bonus')}</span>` : '';
+      html += `<div class="round-item">
+        <span class="round-num">#${labels[i]}</span>
+        <span class="round-pts t1">${r[0] > 0 ? '+' + r[0] : '-'}</span>
+        <span class="round-dash">&mdash;</span>
+        <span class="round-pts t2">${r[1] > 0 ? '+' + r[1] : '-'}</span>
+        <span class="round-num">${bonusTag}</span>
+        <button class="round-del" onclick="confirmDeleteRound(${i})">&times;</button>
+      </div>`;
+    }
+    $rc.innerHTML = html;
+  }
+
+  // Check win
+  if (!game.winShown && (s1 >= game.target || s2 >= game.target)) {
+    game.winShown = true;
+    save();
+    const winner = s1 >= game.target ? game.team1 : game.team2;
+    document.getElementById('winnerName').textContent = winner;
+    document.getElementById('winOverlay').classList.add('show');
+    haptic([50, 50, 100, 50, 200]);
+  }
+}
+
+function renderDialogModes() {
+  const $dm = document.getElementById('dialogModes');
+  $dm.innerHTML = MODES.map(m =>
+    `<button class="dialog-mode-btn" onclick="startNewGame('${m.id}')">
+      ${t('modes')[m.id].name}
+      <small>${t('modes')[m.id].desc}</small>
+    </button>`
+  ).join('');
+}
+
+function updateUndoButton() {
+  document.getElementById('undoBtn').style.display = game.rounds.length > 0 ? '' : 'none';
+}
+
+// --- Actions ---
+function switchMode(modeId) {
+  if (game.rounds.length > 0) {
+    if (!confirm(t('resetWarning'))) return;
+  }
+  const mode = MODES.find(m => m.id === modeId);
+  game.mode = modeId;
+  game.target = mode.target;
+  game.rounds = [];
+  game.winShown = false;
+  save();
+  renderAll();
+}
+
+function popScore(id) {
+  const el = document.getElementById(id);
+  el.classList.add('pop');
+  setTimeout(() => el.classList.remove('pop'), 150);
+}
+
+function addRound(t1, t2, isBonus) {
+  if (t1 === 0 && t2 === 0) return;
+  // Bonus points cannot push score over the target
+  if (isBonus) {
+    const [s1, s2] = totals();
+    if ((t1 > 0 && s1 + t1 >= game.target) || (t2 > 0 && s2 + t2 >= game.target)) {
+      showBonusWarning();
+      return;
+    }
+  }
+  game.rounds.push([t1, t2, !!isBonus]);
+  game.winShown = false;
+  save();
+  renderScores(true);
+  updateUndoButton();
+  if (t1 > 0) popScore('score1');
+  if (t2 > 0) popScore('score2');
+  haptic(30);
+}
+
+function showBonusWarning() {
+  const $el = document.getElementById('bonusWarning');
+  $el.textContent = t('bonusExceedsTarget');
+  $el.classList.add('show');
+  setTimeout(() => $el.classList.remove('show'), 2500);
+}
+
+function addCustom(team) {
+  const $input = document.getElementById('custom' + team);
+  const val = parseInt($input.value, 10);
+  if (!val || val <= 0) return;
+  if (team === 1) addRound(val, 0);
+  else addRound(0, val);
+  $input.value = '';
+}
+
+function confirmDeleteRound(index) {
+  const r = game.rounds[index];
+  const pts = r[0] > 0 ? `${game.team1} +${r[0]}` : `${game.team2} +${r[1]}`;
+  const msg = `${t('deleteRoundConfirm')}\n\n#${index + 1}: ${pts}`;
+  if (confirm(msg)) {
+    game.rounds.splice(index, 1);
+    game.winShown = false;
+    save();
+    renderScores(true);
+    updateUndoButton();
+  }
+}
+
+// --- Undo last round ---
+function undoLastRound() {
+  if (game.rounds.length === 0) return;
+  game.rounds.pop();
+  game.winShown = false;
+  save();
+  renderScores(true);
+  updateUndoButton();
+  haptic(20);
+  showToast(t('undone'), 'info');
+}
+
+// --- Share score ---
+function shareScore() {
+  const [s1, s2] = totals();
+  const modeInfo = t('modes')[game.mode];
+  const text = `${game.team1} ${s1} - ${s2} ${game.team2}\n${modeInfo.name} (${game.rounds.length} ${t('rounds').toLowerCase()})`;
+
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(t('scoreCopied'), 'info');
+    }).catch(() => {});
+  }
+  haptic(30);
+}
+
+// --- Toast helper ---
+function showToast(msg, cls) {
+  const $el = document.getElementById('bonusWarning');
+  $el.textContent = msg;
+  $el.className = 'toast' + (cls ? ' ' + cls : '');
+  $el.classList.add('show');
+  setTimeout(() => $el.classList.remove('show'), 2500);
+}
+
+function showBonusWarningOriginal() {
+  showToast(t('bonusExceedsTarget'));
+}
+
+function openNewGameDialog() {
+  document.getElementById('newGameDialog').classList.add('show');
+}
+function closeNewGameDialog() {
+  document.getElementById('newGameDialog').classList.remove('show');
+}
+
+function startNewGame(modeId) {
+  const mode = MODES.find(m => m.id === modeId);
+  game.mode = modeId;
+  game.target = mode.target;
+  game.rounds = [];
+  game.winShown = false;
+  save();
+  closeNewGameDialog();
+  renderAll();
+}
+
+function confirmQuickNewGame() {
+  if (game.rounds.length === 0) return;
+  if (confirm(t('resetWarning'))) quickNewGame();
+}
+
+function quickNewGame() {
+  game.rounds = [];
+  game.winShown = false;
+  save();
+  renderAll();
+}
+
+function closeWin() {
+  document.getElementById('winOverlay').classList.remove('show');
+}
+
+// Team name editing
+document.getElementById('name1').addEventListener('change', e => {
+  game.team1 = e.target.value.trim() || t('team1Default');
+  save(); renderAll();
+});
+document.getElementById('name2').addEventListener('change', e => {
+  game.team2 = e.target.value.trim() || t('team2Default');
+  save(); renderAll();
+});
+
+// Enter key on custom inputs
+document.getElementById('custom1').addEventListener('keydown', e => { if (e.key === 'Enter') addCustom(1); });
+document.getElementById('custom2').addEventListener('keydown', e => { if (e.key === 'Enter') addCustom(2); });
+
+// Init
+load();
+applyTheme();
+renderAll();
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
