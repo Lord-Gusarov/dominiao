@@ -1,7 +1,9 @@
-const CACHE_NAME = 'dominiao-v5';
+const CACHE_NAME = 'dominiao-v15';
 const ASSETS = [
   './',
   './index.html',
+  './css/styles.css',
+  './js/app.js',
   './manifest.json'
 ];
 
@@ -23,16 +25,12 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      // Serve from cache, update in background
-      const fetchPromise = fetch(e.request).then(response => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        }
-        return response;
-      }).catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(e.request).then(response => {
+      if (response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+      }
+      return response;
+    }).catch(() => caches.match(e.request))
   );
 });
