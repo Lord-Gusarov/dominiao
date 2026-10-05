@@ -97,12 +97,44 @@ let game = {
 };
 let pendingMode = null;
 
+const THEMES = ['warm', 'stadium', 'modern'];
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(game)); }
 
+// Keep only well-formed fields from stored state; anything else falls back to defaults.
+function sanitizeState(s) {
+  const out = {};
+  if (!s || typeof s !== 'object') return out;
+  const isCount = n => Number.isInteger(n) && n >= 0;
+  if (typeof s.teamA === 'string') out.teamA = s.teamA.trim().slice(0, 12);
+  if (typeof s.teamB === 'string') out.teamB = s.teamB.trim().slice(0, 12);
+  if (MODES.some(m => m.id === s.mode)) out.mode = s.mode;
+  if (STRINGS[s.lang]) out.lang = s.lang;
+  if (THEMES.includes(s.theme)) out.theme = s.theme;
+  if (typeof s.winShown === 'boolean') out.winShown = s.winShown;
+  if (isCount(s.roundCounter)) out.roundCounter = s.roundCounter;
+  if (Array.isArray(s.rounds)) {
+    out.rounds = s.rounds
+      .filter(r => r && (r.team === 'a' || r.team === 'b')
+        && isCount(r.id) && isCount(r.points) && isCount(r.bonus))
+      .map(r => ({
+        id: r.id, team: r.team, points: r.points, bonus: r.bonus,
+        timestamp: typeof r.timestamp === 'string' ? r.timestamp.slice(0, 16) : '',
+      }));
+  }
+  return out;
+}
+
 function load() {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  let raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch(e) {}
   if (raw) {
-    try { const s = JSON.parse(raw); game = { ...game, ...s }; } catch(e) {}
+    try { game = { ...game, ...sanitizeState(JSON.parse(raw)) }; } catch(e) {}
   }
   if (!game.teamA) game.teamA = t('us');
   if (!game.teamB) game.teamB = t('them');
@@ -284,7 +316,7 @@ function renderAddSection() {
       <div class="bonus-row">
         ${['a', 'b'].map(k => `<button class="bonus-btn" onclick="submitBonus('${k}',25)">
           <span>+25</span>
-          <span class="team-label">${k === 'a' ? game.teamA : game.teamB}</span>
+          <span class="team-label">${escapeHtml(k === 'a' ? game.teamA : game.teamB)}</span>
         </button>`).join('')}
       </div>`;
   } else if (mode.bonus === 'custom') {
@@ -353,7 +385,7 @@ function renderHistory() {
     return `<div class="history-cell" style="background:${tintBg}">
       <div class="cell-info">
         ${isBonus ? `<span class="bonus-badge" style="background:${teamColor}">${t('bonus')}</span>` : ''}
-        <div class="cell-time">${entry.timestamp || ''}</div>
+        <div class="cell-time">${escapeHtml(entry.timestamp || '')}</div>
       </div>
       <div class="cell-right">
         <div class="delta" style="color:${teamColor};${isBonus ? `text-shadow:0 0 10px ${teamGlow}` : ''}">+${total}</div>
@@ -394,7 +426,7 @@ function renderHistory() {
       <div class="history-team-cell">
         <div class="team-info">
           <span class="team-dot" style="background:var(--team-a);box-shadow:0 0 6px var(--team-a-glow)"></span>
-          <span class="team-label" style="color:var(--team-a)">${game.teamA}</span>
+          <span class="team-label" style="color:var(--team-a)">${escapeHtml(game.teamA)}</span>
         </div>
         <span class="team-total">${totalA}</span>
       </div>
@@ -402,7 +434,7 @@ function renderHistory() {
       <div class="history-team-cell">
         <div class="team-info">
           <span class="team-dot" style="background:var(--team-b);box-shadow:0 0 6px var(--team-b-glow)"></span>
-          <span class="team-label" style="color:var(--team-b)">${game.teamB}</span>
+          <span class="team-label" style="color:var(--team-b)">${escapeHtml(game.teamB)}</span>
         </div>
         <span class="team-total">${totalB}</span>
       </div>
@@ -413,7 +445,7 @@ function renderHistory() {
     const row = rows[r];
     html += `<div class="history-round-row">
       ${buildCell(row.cellA, 'a')}
-      <div class="round-id-cell"><span class="round-id-badge">R${row.rid}</span></div>
+      <div class="round-id-cell"><span class="round-id-badge">R${escapeHtml(row.rid)}</span></div>
       ${buildCell(row.cellB, 'b')}
     </div>`;
   }
@@ -488,12 +520,12 @@ function showWinOverlay(winner) {
 
   document.getElementById('winScoreCard').innerHTML = `
     <div style="text-align:center">
-      <div class="label-sm" style="color:var(--team-a);margin-bottom:4px">${game.teamA}</div>
+      <div class="label-sm" style="color:var(--team-a);margin-bottom:4px">${escapeHtml(game.teamA)}</div>
       <div class="score-digits" style="font-size:32px;color:${winner === 'a' ? 'var(--gold-glow)' : 'var(--fg)'}">${String(game.scoreA).padStart(3, '0')}</div>
     </div>
     <div style="width:1px;height:36px;background:var(--divider)"></div>
     <div style="text-align:center">
-      <div class="label-sm" style="color:var(--team-b);margin-bottom:4px">${game.teamB}</div>
+      <div class="label-sm" style="color:var(--team-b);margin-bottom:4px">${escapeHtml(game.teamB)}</div>
       <div class="score-digits" style="font-size:32px;color:${winner === 'b' ? 'var(--gold-glow)' : 'var(--fg)'}">${String(game.scoreB).padStart(3, '0')}</div>
     </div>`;
 
